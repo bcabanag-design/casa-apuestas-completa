@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes Financieros - Casa de Apuestas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        .subheader-bg {
+            background-color: #D1FAE5;
+            color: #047857;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+    </style>
+</head>
+
+<body class="p-4 sm:p-8">
+    <div class="max-w-7xl mx-auto">
+
+        <!-- ENCABEZADO -->
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-3xl font-bold text-gray-800 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-500 mr-2" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20V10" />
+                    <path d="M18 20V4" />
+                    <path d="M6 20v-4" />
+                    <path d="M3 20h18" />
+                </svg>
+                Reportes Financieros
+            </h1>
+            <a href="{{ url_for('index') }}"
+                class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-100 shadow-sm transition duration-150">
+                &larr; Volver al Dashboard
+            </a>
+        </div>
+
+        <!-- MENSAJES FLASH -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="mb-4">
+            {% for category, message in messages %}
+            <div
+                class="p-3 rounded-md text-sm {% if category == 'error' %}bg-red-100 text-red-800{% elif category == 'success' %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <!-- SECCIÓN 1: BALANCE CONSOLIDADO DE APOSTADORES -->
+        <div class="mb-10 card">
+            <div class="subheader-bg p-4 rounded-t-lg">
+                <h2 class="text-xl font-bold">Balance Consolidado de Apostadores</h2>
+                <p class="text-sm opacity-90">Saldos finales y totales de actividad (Apostado vs. Retornado).</p>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-green-100">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                Apostador</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                Saldo Final (S/)</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                Total Apostado (S/)</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                Total Retornado (S/)</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                Ganancia/Pérdida Neta (S/)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for apostador in apostadores %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{{
+                                apostador.nombre }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700 font-semibold">S/ {{
+                                "{:,.2f}".format(apostador.saldo_final | default(0.00)) }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">S/ {{
+                                "{:,.2f}".format(apostador.total_apostado | default(0.00)) }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-green-600 font-medium">S/ {{
+                                "{:,.2f}".format(apostador.total_ganado | default(0.00)) }}</td>
+                            <td
+                                class="px-4 py-3 whitespace-nowrap text-sm {% if apostador.ganancia_neta | default(0.00) > 0 %}text-green-700{% elif apostador.ganancia_neta | default(0.00) < 0 %}text-red-700{% else %}text-gray-500{% endif %} font-bold">
+                                S/ {{ "{:,.2f}".format(apostador.ganancia_neta | default(0.00)) }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if not apostadores %}
+                        <tr>
+                            <td colspan="5" class="px-4 py-4 text-center text-sm text-gray-500">No hay apostadores
+                                registrados.</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 2: GANANCIA DE LA CASA -->
+        <div class="mb-10 card">
+            <div class="subheader-bg p-4 rounded-t-lg">
+                <h2 class="text-xl font-bold">Ganancias de la Casa</h2>
+                <p class="text-sm opacity-90">Rentabilidad total y comisiones obtenidas por partida.</p>
+            </div>
+
+            <div class="p-4 border-b border-gray-200">
+                <p class="text-lg font-semibold text-gray-800">Ganancia Total de la Casa (Comisiones Acumuladas):</p>
+                <p class="text-2xl font-bold text-green-700">S/ {{ "{:,.2f}".format(rentabilidad | default(0.00)) }}</p>
+            </div>
+
+            <div class="overflow-x-auto">
+                <h3 class="font-bold text-lg p-4 bg-gray-50 border-b">Comisiones por Partida Resuelta</h3>
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                ID Partida</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                Partida</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                Ganador</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                Comisión Casa (S/)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for partida in reporte_partidas %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{{ partida.id }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{{ partida.nombre_equipo1 }}
+                                vs {{ partida.nombre_equipo2 }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">Equipo {{
+                                partida.equipo_ganador }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-red-600 font-semibold">S/ {{
+                                "{:,.2f}".format(partida.ganancia_casa | default(0.00)) }}</td>
+                        </tr>
+                        {% endfor %}
+                        {% if not reporte_partidas %}
+                        <tr>
+                            <td colspan="4" class="px-4 py-4 text-center text-sm text-gray-500">No hay partidas
+                                resueltas.</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 3: DETALLE DE TRANSACCIONES -->
+        <div class="mb-10 card">
+            <div class="subheader-bg p-4 rounded-t-lg">
+                <h2 class="text-xl font-bold">Detalle de Apuestas Resueltas (Transacciones)</h2>
+                <p class="text-sm opacity-90">Registro individual de cada apuesta, resultado y cobro.</p>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-green-100">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                Partida ID</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                Apostador</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                Partida</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                Apuesta a Equipo</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                Resultado</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                Monto Apostado (S/)</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                Monto Cobrado (S/)</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                                Ganancia/Pérdida Neta (S/)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for apuesta in reporte_apuestas_detallado %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{{ apuesta.partida_id }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{{
+                                apuesta.apostador }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{{ apuesta.partida_nombre }}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{{
+                                apuesta.equipo_apostado_nombre }}</td>
+                            <td
+                                class="px-4 py-3 whitespace-nowrap text-sm font-bold {% if apuesta.resultado_texto == 'Ganada' %}text-green-600{% else %}text-red-600{% endif %}">
+                                {{ apuesta.resultado_texto }}
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">S/ {{
+                                "{:,.2f}".format(apuesta.monto_apostado | default(0.00)) }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm text-green-600 font-medium">S/ {{
+                                "{:,.2f}".format(apuesta.monto_cobrado | default(0.00)) }}</td>
+                            <td
+                                class="px-4 py-3 whitespace-nowrap text-sm font-bold {% if apuesta.ganancia_neta | default(0.00) > 0 %}text-green-700{% elif apuesta.ganancia_neta | default(0.00) < 0 %}text-red-700{% else %}text-gray-500{% endif %}">
+                                S/ {{ "{:,.2f}".format(apuesta.ganancia_neta | default(0.00)) }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if not reporte_apuestas_detallado %}
+                        <tr>
+                            <td colspan="8" class="px-4 py-4 text-center text-sm text-gray-500">No hay apuestas
+                                resueltas.</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Casa de Apuestas</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='custom.css') }}">
+</head>
+
+<body>
+    <div class="container">
+        <div class="main-container">
+            <!-- Header -->
+            <div class="dashboard-header">
+                <div class="d-flex justify-content-between align-items-center flex-wrap">
+                    <h1><i class="bi bi-controller"></i> Dashboard Casa de Apuestas</h1>
+                    <div class="header-actions mt-2 mt-md-0">
+                        <a href="{{ url_for('reportes') }}" class="btn btn-light btn-sm">
+                            <i class="bi bi-graph-up"></i> Reportes
+                        </a>
+                        <a href="{{ url_for('exportar_excel') }}" class="btn btn-info btn-sm">
+                            <i class="bi bi-download"></i> Exportar Excel
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                <i
+                    class="bi bi-{% if category == 'success' %}check-circle{% elif category == 'error' %}x-circle{% else %}exclamation-triangle{% endif %}"></i>
+                {{ message }}
+                <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            <!-- Tabs Navigation -->
+            <ul class="nav nav-tabs" id="dashboardTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="apostadores-tab" data-bs-toggle="tab"
+                        data-bs-target="#apostadores" type="button" role="tab">
+                        <i class="bi bi-people-fill"></i> Apostadores
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="partidas-abiertas-tab" data-bs-toggle="tab"
+                        data-bs-target="#partidas-abiertas" type="button" role="tab">
+                        <i class="bi bi-trophy"></i> Partidas Abiertas
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="partidas-resueltas-tab" data-bs-toggle="tab"
+                        data-bs-target="#partidas-resueltas" type="button" role="tab">
+                        <i class="bi bi-check-circle"></i> Partidas Resueltas
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tabs Content -->
+            <div class="tab-content" id="dashboardTabsContent">
+
+                <!-- TAB 1: APOSTADORES -->
+                <div class="tab-pane fade show active" id="apostadores" role="tabpanel">
+                    <div class="row">
+                        <!-- Lista de Apostadores -->
+                        <div class="col-lg-6 mb-2">
+                            <div class="card">
+                                <div class="card-header">
+                                    <i class="bi bi-person-badge"></i> Apostadores Activos
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover table-sm mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Nombre</th>
+                                                    <th>Saldo (S/)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for apostador in apostadores %}
+                                                <tr>
+                                                    <td><i class="bi bi-person-circle text-primary"></i> {{
+                                                        apostador.nombre }}</td>
+                                                    <td><strong>{{ "{:.2f}".format(apostador.saldo) }}</strong></td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    {% if not apostadores %}
+                                    <div class="p-3 text-center text-muted">
+                                        <small>No hay apostadores registrados.</small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Formularios de Apostadores -->
+                        <div class="col-lg-6">
+                            <!-- Registrar Nuevo Apostador -->
+                            <div class="card mb-2">
+                                <div class="card-header">
+                                    <i class="bi bi-person-plus"></i> Registrar Apostador
+                                </div>
+                                <div class="card-body">
+                                    <form method="POST" action="{{ url_for('add_apostador') }}">
+                                        <div class="mb-2">
+                                            <label for="nombre" class="form-label">Nombre</label>
+                                            <input type="text" class="form-control form-control-sm" id="nombre"
+                                                name="nombre" required>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label for="saldo" class="form-label">Saldo Inicial (S/)</label>
+                                            <input type="number" class="form-control form-control-sm" id="saldo"
+                                                name="saldo" step="0.01" value="0.00" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary btn-sm w-100">
+                                            <i class="bi bi-plus-circle"></i> Registrar
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Ajustar Saldo -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <i class="bi bi-cash-stack"></i> Ajustar Saldo
+                                </div>
+                                <div class="card-body">
+                                    <form method="POST" action="{{ url_for('ajustar_saldo') }}">
+                                        <div class="mb-2">
+                                            <label for="nombre_apostador_ajuste" class="form-label">Apostador</label>
+                                            <select class="form-select form-select-sm" id="nombre_apostador_ajuste"
+                                                name="nombre_apostador" required>
+                                                <option value="" disabled selected>Seleccione</option>
+                                                {% for apostador in apostadores %}
+                                                <option value="{{ apostador.nombre }}">{{ apostador.nombre }} (S/ {{
+                                                    "{:.2f}".format(apostador.saldo) }})</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label for="monto_ajuste" class="form-label">Monto (+/-)</label>
+                                            <input type="number" class="form-control form-control-sm" id="monto_ajuste"
+                                                name="monto" step="0.01" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-success btn-sm w-100">
+                                            <i class="bi bi-arrow-left-right"></i> Ajustar
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: PARTIDAS ABIERTAS -->
+                <div class="tab-pane fade" id="partidas-abiertas" role="tabpanel">
+                    <div class="row">
+                        <!-- Formularios de Partidas -->
+                        <div class="col-lg-5 mb-2">
+                            <!-- Crear Nueva Partida -->
+                            <div class="card mb-2">
+                                <div class="card-header">
+                                    <i class="bi bi-plus-square"></i> Crear Partida
+                                </div>
+                                <div class="card-body">
+                                    <form method="POST" action="{{ url_for('crear_partida') }}">
+                                        <div class="mb-2">
+                                            <label for="equipo1" class="form-label">Equipo 1</label>
+                                            <input type="text" class="form-control form-control-sm" id="equipo1"
+                                                name="equipo1" required>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label for="equipo2" class="form-label">Equipo 2</label>
+                                            <input type="text" class="form-control form-control-sm" id="equipo2"
+                                                name="equipo2" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-success btn-sm w-100">
+                                            <i class="bi bi-trophy"></i> Crear
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Registrar Apuesta -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <i class="bi bi-currency-dollar"></i> Registrar Apuesta
+                                </div>
+                                <div class="card-body">
+                                    <form method="POST" action="{{ url_for('registrar_apuesta') }}">
+                                        <div class="mb-2">
+                                            <label for="apostador_apuesta" class="form-label">Apostador</label>
+                                            <select class="form-select form-select-sm" id="apostador_apuesta"
+                                                name="nombre_apostador" required>
+                                                <option value="" disabled selected>Seleccione</option>
+                                                {% for apostador in apostadores %}
+                                                <option value="{{ apostador.nombre }}">{{ apostador.nombre }} (S/ {{
+                                                    "{:.2f}".format(apostador.saldo) }})</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label for="partida_id_apuesta" class="form-label">Partida</label>
+                                            <select class="form-select form-select-sm" id="partida_id_apuesta"
+                                                name="partida_id" required>
+                                                <option value="" disabled selected>Seleccione</option>
+                                                {% for partida in partidas_abiertas %}
+                                                <option value="{{ partida.id }}">ID {{ partida.id}}: {{
+                                                    partida.nombre_equipo1 }} vs {{ partida.nombre_equipo2 }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label for="equipo_apuesta" class="form-label">Equipo</label>
+                                            <select class="form-select form-select-sm" id="equipo_apuesta" name="equipo"
+                                                required>
+                                                <option value="1">Equipo 1</option>
+                                                <option value="2">Equipo 2</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label for="monto_apuesta" class="form-label">Monto (S/)</label>
+                                            <input type="number" class="form-control form-control-sm" id="monto_apuesta"
+                                                name="monto" step="0.01" min="0.01" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary btn-sm w-100">
+                                            <i class="bi bi-cash-coin"></i> Registrar
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lista de Partidas Abiertas -->
+                        <div class="col-lg-7">
+                            <h6 class="mb-2"><i class="bi bi-list-ul"></i> Partidas en Curso</h6>
+                            {% for partida in partidas_abiertas %}
+                            <div class="card partida-card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title mb-0">
+                                            <span class="badge bg-primary">ID {{ partida.id }}</span>
+                                            {{ partida.nombre_equipo1 }} <strong>vs</strong> {{ partida.nombre_equipo2
+                                            }}
+                                        </h6>
+                                    </div>
+
+                                    <div class="row mb-2">
+                                        <div class="col-6">
+                                            <small class="text-muted">Total E1</small>
+                                            <div class="h6 mb-0">S/ {{ "{:.2f}".format(partida.total_apostado_e1) }}
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted">Total E2</small>
+                                            <div class="h6 mb-0">S/ {{ "{:.2f}".format(partida.total_apostado_e2) }}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {% if partida.total_apostado_e1 != partida.total_apostado_e2 %}
+                                    <div class="alert alert-warning py-1 mb-2">
+                                        <i class="bi bi-exclamation-triangle"></i> <strong>DIFERENCIA PENDIENTE</strong>
+                                    </div>
+                                    {% else %}
+                                    <div class="alert alert-success py-1 mb-2">
+                                        <i class="bi bi-check-circle"></i> <strong>LISTA PARA RESOLVER</strong>
+                                    </div>
+                                    {% endif %}
+
+                                    <!-- Apuestas Registradas -->
+                                    {% if apuestas_por_partida[partida.id] %}
+                                    <h6 class="mt-2 mb-1" style="font-size: 0.85rem;"><i class="bi bi-list-check"></i>
+                                        Apuestas</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered mb-2">
+                                            <thead>
+                                                <tr>
+                                                    <th>Apostador</th>
+                                                    <th>Monto</th>
+                                                    <th>Equipo</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for apuesta in apuestas_por_partida[partida.id] %}
+                                                <tr>
+                                                    <td>{{ apuesta.nombre }}</td>
+                                                    <td>{{ "{:.2f}".format(apuesta.monto) }}</td>
+                                                    <td><span class="badge bg-secondary">E{{ apuesta.equipo_apostado
+                                                            }}</span></td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    {% else %}
+                                    <p class="text-muted mb-0" style="font-size: 0.8rem;"><i
+                                            class="bi bi-info-circle"></i> Sin apuestas</p>
+                                    {% endif %}
+
+                                    <!-- Resolver Partida -->
+                                    <form method="POST" action="{{ url_for('resolver_partida') }}" class="mt-2">
+                                        <input type="hidden" name="partida_id" value="{{ partida.id }}">
+                                        <div class="row g-1">
+                                            <div class="col-8">
+                                                <select name="equipo_ganador" class="form-select form-select-sm"
+                                                    required>
+                                                    <option value="" disabled selected>Ganador</option>
+                                                    <option value="1">{{ partida.nombre_equipo1 }}</option>
+                                                    <option value="2">{{ partida.nombre_equipo2 }}</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-4">
+                                                <button type="submit" class="btn btn-success btn-sm w-100">
+                                                    <i class="bi bi-check-lg"></i> Resolver
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            {% endfor %}
+
+                            {% if not partidas_abiertas %}
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> No hay partidas abiertas.
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: PARTIDAS RESUELTAS -->
+                <div class="tab-pane fade" id="partidas-resueltas" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-clock-history"></i> Historial (Últimas 10)</span>
+                            <form method="POST" action="{{ url_for('borrar_historial') }}"
+                                onsubmit="return confirmarBorrado();" class="mb-0">
+                                <button type="submit" class="btn btn-danger btn-sm">
+                                    <i class="bi bi-trash"></i> Borrar
+                                </button>
+                            </form>
+                        </div>
+                        <div class="card-body p-0">
+                            {% if partidas_resueltas %}
+                            <div class="table-responsive">
+                                <table class="table table-hover table-sm mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Partida</th>
+                                            <th>Ganador</th>
+                                            <th>Comisión (S/)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for partida in partidas_resueltas %}
+                                        <tr>
+                                            <td>
+                                                <i class="bi bi-trophy-fill text-warning"></i>
+                                                {{ partida.nombre_equipo1 }} vs {{ partida.nombre_equipo2 }}
+                                            </td>
+                                            <td>
+                                                {% if partida.equipo_ganador == 1 %}
+                                                <span class="badge bg-success">{{ partida.nombre_equipo1 }}</span>
+                                                {% elif partida.equipo_ganador == 2 %}
+                                                <span class="badge bg-success">{{ partida.nombre_equipo2 }}</span>
+                                                {% else %}
+                                                <span class="badge bg-secondary">N/A</span>
+                                                {% endif %}
+                                            </td>
+                                            <td><strong>{{ "{:.2f}".format(partida.ganancia_casa) }}</strong></td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="p-3 text-center text-muted">
+                                <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                <p class="mt-2 mb-0" style="font-size: 0.9rem;">Aún no hay partidas resueltas.</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Función para leer parámetros de la URL
+        function getURLParameter(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        // Activar la pestaña correcta al cargar la página y restaurar scroll
+        document.addEventListener('DOMContentLoaded', function () {
+            const activeTab = getURLParameter('active_tab');
+
+            if (activeTab) {
+                // Desactivar la pestaña activa actual
+                const currentActiveTab = document.querySelector('.nav-link.active');
+                const currentActivePane = document.querySelector('.tab-pane.active');
+
+                if (currentActiveTab) {
+                    currentActiveTab.classList.remove('active');
+                }
+                if (currentActivePane) {
+                    currentActivePane.classList.remove('show', 'active');
+                }
+
+                //Activar la nueva pestaña
+                const newTabButton = document.querySelector(`#${activeTab}-tab`);
+                const newTabPane = document.querySelector(`#${activeTab}`);
+
+                if (newTabButton && newTabPane) {
+                    newTabButton.classList.add('active');
+                    newTabPane.classList.add('show', 'active');
+                }
+            }
+
+            // --- SCROLL PERSISTENCE ---
+            // Recuperar posición del scroll
+            const scrollPos = localStorage.getItem('scrollPos');
+            if (scrollPos) {
+                window.scrollTo(0, parseInt(scrollPos));
+                localStorage.removeItem('scrollPos'); // Limpiar después de usar
+            }
+        });
+
+        // Guardar posición del scroll antes de recargar (al enviar formularios)
+        window.addEventListener('beforeunload', function () {
+            localStorage.setItem('scrollPos', window.scrollY);
+        });
+
+        function confirmarBorrado() {
+            var confirmacion1 = confirm("¡ADVERTENCIA! Esta acción borrará PERMANENTEMENTE todas las partidas resueltas y sus apuestas asociadas. ¿Estás absolutamente seguro de querer continuar?");
+
+            if (confirmacion1) {
+                var confirmacion2 = confirm("SEGUNDA CONFIRMACIÓN: Los datos se perderán sin opción a recupero. Haz clic en Aceptar solo si estás 100% seguro.");
+                return confirmacion2;
+            }
+            return false;
+        }
+    </script>
+</body>
+
+</html>

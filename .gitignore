@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+venv/
+env/
+
+# Environment variables
+.env
+
+# Distribution / Packaging
+build/
+dist/
+*.spec
+
+# IDEs
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Render / Cloud
+.DS_Store

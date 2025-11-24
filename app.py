@@ -4,6 +4,9 @@ import csv
 from io import StringIO, BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
+import threading
+import time
+import webbrowser
 import sys
 import os
 
@@ -38,7 +41,7 @@ def teardown_casa(exception):
 
 # --- Rutas de la Aplicación (Públicas) ---
 
-@app.route('/')
+@ app.route('/')
 def index():
     casa = get_casa()
     try:
@@ -155,7 +158,7 @@ def exportar_excel():
         for p in casa.obtener_reporte_partidas():
             ganador = p['nombre_equipo1'] if p['equipo_ganador'] == 1 else p['nombre_equipo2']
             ws2.append([f"{p['nombre_equipo1']} vs {p['nombre_equipo2']}", ganador, p['ganancia_casa']])
-        ws2.append(['TOTAL', '', casa.calcular_rentabilidad_total() or 0.0])
+        ws2.append(['TOTAL','', casa.calcular_rentabilidad_total() or 0.0])
 
         # Hoja 3
         ws3 = wb.create_sheet("Detalle Apuestas")
@@ -187,5 +190,17 @@ def borrar_historial():
         flash(f"Error: {e}", "error")
     return redirect(url_for('index', active_tab='partidas-resueltas'))
 
+def open_browser():
+    """Abre el navegador después de que el servidor esté listo."""
+    time.sleep(1.5)
+    webbrowser.open('http://127.0.0.1:5000')
+
 if __name__ == '__main__':
+    # Solo abrir navegador en desarrollo local (no en Render o producción)
+    # Render establece automáticamente la variable RENDER=true
+    is_local = os.environ.get('RENDER') is None
+    
+    if is_local:
+        threading.Thread(target=open_browser).start()
+    
     app.run(host='0.0.0.0', port=5000, debug=False)
